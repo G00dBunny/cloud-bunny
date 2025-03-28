@@ -1,4 +1,4 @@
-package ListUtils
+package listutils
 
 import "fmt"
 

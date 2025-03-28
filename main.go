@@ -1,21 +1,19 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"path/filepath"
 
-	"github.com/G00dBunny/cloud-bunny/ListUtils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/G00dBunny/Gargamel/gargamel"
+	"github.com/G00dBunny/cloud-bunny/listutils"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
 
 func main() {
-	ListUtils.ListCluster()
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -37,43 +35,26 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	exp := gargamel.Expiration(gargamel.NoExpiration)
 
-	namespacesListType, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 
+	cache := gargamel.New(&exp)
 
-	if err != nil {
-		log.Fatal(err.Error())
+	ns := "monitoring"
+
+	namespace := gargamel.Namespace{
+		Name: ns,
+	}
+	logs := listutils.GetPodLog("monitoring", "grafana", clientset)
+
+	podList := []*gargamel.Pod{
+		{Name: logs},
 	}
 
-	namespaces := namespacesListType.Items
 
-
-	for _, namespace := range namespaces{
-		nameNS := namespace.Name
-		podsListType, err := clientset.CoreV1().Pods(nameNS).List(context.TODO(), metav1.ListOptions{})
-
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		pods := podsListType.Items
-
-		fmt.Printf("\n")
-
-		fmt.Printf("========================================== \n")
-
-		fmt.Printf("NAMESPACE : %s \n", nameNS)
-		
-		fmt.Printf("\n")
-
-		for _, pod := range pods {
-			podName := pod.Name
-			fmt.Println(podName)
-		}
-
-	}
-
+	cache.Set(&namespace, podList)
 	
-	
+
+	fmt.Println(cache.String())
 
 }
