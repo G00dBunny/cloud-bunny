@@ -1,3 +1,24 @@
+/*
+*   IDEAS
+*			- use lightweight kubeconfig context (long-lived token if in aws)
+*			- Skip pods in Running state with no recent restarts
+*			- Only fetch logs -> error, CrashLoopBackOff
+*			- if in aws : run in small EC2 instance inside the same VPC as eks cluster?
+*			- For logs : use TailLines + SinceSeconds to get last numbers of lines or last seconds
+*			- track restart counts of pods -> detect pods with high restarts
+*			- mark pods as stale
+*			- integrate  pod status and health
+*			- memory estimate
+*			-
+*	TODO :
+*			- In gargamel : add flush to autoremove expired entries
+*			- background go routine that purges old pods
+*			-
+*			-
+*			-
+*
+ */
+
 package main
 
 import (
@@ -50,7 +71,6 @@ func main() {
 	podList := []*gargamel.Pod{
 		{Name: logs},
 	}
-
 
 	cache.Set(&namespace, podList)
 	
