@@ -50,7 +50,9 @@ func main() {
 	}
 
 	// create the clientset
+
 	clientset, err := kubernetes.NewForConfig(config)
+	clientset.CoreV1()
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -66,7 +68,7 @@ func main() {
 	namespace := gargamel.Namespace{
 		Name: ns,
 	}
-	logs := listutils.GetPodLog("monitoring", "grafana", clientset)
+	logs := listutils.GetPodLog("monitoring", "real-memory-leak", clientset)
 
 	podList := []*gargamel.Pod{
 		{Name: logs},
@@ -76,5 +78,11 @@ func main() {
 	
 
 	fmt.Println(cache.String())
+	
+
+	namespaceList,_ := listutils.GetAllNamespacesName(clientset)
+
+	listutils.GetBadPod(namespaceList,clientset)
+	
 
 }
