@@ -138,3 +138,19 @@ func GetBadPod(namespaces []string, clientset *kubernetes.Clientset) []string {
     
     return badPodNames
 }
+
+func FindPodNamespace(podName string, namespaces []string, clientset *kubernetes.Clientset) string {
+	for _, ns := range namespaces {
+		pods, err := clientset.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			continue
+		}
+		
+		for _, pod := range pods.Items {
+			if pod.Name == podName {
+				return ns
+			}
+		}
+	}
+	return ""
+}
