@@ -1,13 +1,15 @@
 /*
+*	DONE
+*			- Only fetch logs -> error, CrashLoopBackOff
+*			- For logs : use TailLines + SinceSeconds to get last numbers of lines or last seconds
+*			- Skip pods in Running state with no recent restarts
+*			- integrate  pod status and health
+*
 *   IDEAS
 *			- use lightweight kubeconfig context (long-lived token if in aws)
-*			- Skip pods in Running state with no recent restarts
-*			- Only fetch logs -> error, CrashLoopBackOff
 *			- if in aws : run in small EC2 instance inside the same VPC as eks cluster?
-*			- For logs : use TailLines + SinceSeconds to get last numbers of lines or last seconds
 *			- track restart counts of pods -> detect pods with high restarts
 *			- mark pods as stale
-*			- integrate  pod status and health
 *			- memory estimate
 *			-
 *	TODO :
@@ -39,13 +41,15 @@ func main() {
 
 	config.LoadEnv()
 	
-	// Get OpenAI configuration from environment
 	apiKey, model, maxTokens, timeoutSec := config.GetOpenAIConfig()
 	if apiKey == "" {
 		log.Println("OPENAI_API_KEY not set in environment or .env file; will skip GPT analysis")
 	}
 
 	
+	/*
+	* 	From client-go k8 doc
+	*/
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
