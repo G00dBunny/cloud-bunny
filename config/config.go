@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strconv"
@@ -13,6 +14,25 @@ func LoadEnv() {
 	if err != nil {
 		log.Println("Warning: .env file not found, using environment variables")
 	}
+}
+
+func GetJiraConfig() (string, string, string, error) {
+	jiraToken := os.Getenv("JIRA_TOKEN")
+	if jiraToken == "" {
+		return "", "", "", errors.New("JIRA_TOKEN environment variable is not set")
+	}
+
+	jiraUser := os.Getenv("JIRA_USER")
+	if jiraUser == "" {
+		return "", "", "", errors.New("JIRA_USER environment variable is not set")
+	}
+
+	jiraUrl := os.Getenv("JIRA_URL")
+	if jiraUrl == "" {
+		return "", "", "", errors.New("JIRA_URL environment variable is not set")
+	}
+
+	return jiraToken, jiraUser, jiraUrl, nil
 }
 
 func GetOpenAIConfig() (string, string, int, int) {

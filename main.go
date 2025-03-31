@@ -12,6 +12,10 @@
 *			- mark pods as stale
 *			- memory estimate
 *			-
+*			- Automated jira ticket creation after vulnerability detected -> have the use decide if it wants to create it or not
+*			-
+*			-
+*			-
 *	TODO :
 *			- In gargamel : add flush to autoremove expired entries
 *			- background go routine that purges old pods
