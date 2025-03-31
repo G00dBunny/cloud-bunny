@@ -6,9 +6,14 @@ import (
 	"github.com/andygrunwald/go-jira"
 )
 
-func CreateNewIssue(){
 
+type JiraConfig struct {
+	Username string
+	Token string
+	URL string
+	Project string
 }
+
 
 func JiraClient(username string, password string, url string) *jira.Client{
 	jt := jira.BasicAuthTransport{

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/G00dBunny/cloud-bunny/jiraBed"
 	"github.com/joho/godotenv"
 )
 
@@ -16,23 +17,35 @@ func LoadEnv() {
 	}
 }
 
-func GetJiraConfig() (string, string, string, error) {
-	jiraToken := os.Getenv("JIRA_TOKEN")
-	if jiraToken == "" {
-		return "", "", "", errors.New("JIRA_TOKEN environment variable is not set")
-	}
-
+func GetJiraConfig() (jiraBed.JiraConfig, error) {
+	
 	jiraUser := os.Getenv("JIRA_USER")
 	if jiraUser == "" {
-		return "", "", "", errors.New("JIRA_USER environment variable is not set")
+		return jiraBed.JiraConfig{}, errors.New("JIRA_USER environment variable is not set")
 	}
 
-	jiraUrl := os.Getenv("JIRA_URL")
-	if jiraUrl == "" {
-		return "", "", "", errors.New("JIRA_URL environment variable is not set")
+	jiraToken := os.Getenv("JIRA_TOKEN")
+	if jiraToken == "" {
+		return jiraBed.JiraConfig{}, errors.New("JIRA_TOKEN environment variable is not set")
 	}
 
-	return jiraToken, jiraUser, jiraUrl, nil
+
+	jiraURL := os.Getenv("JIRA_URL")
+	if jiraURL == "" {
+		return jiraBed.JiraConfig{}, errors.New("JIRA_URL environment variable is not set")
+	}
+
+	jiraProject := os.Getenv("JIRA_PROJECT")
+	if jiraProject == "" {
+		return jiraBed.JiraConfig{}, errors.New("JIRA_PROJECT environment variable is not set")
+	}
+
+	return jiraBed.JiraConfig{
+		Username: jiraUser,
+		Token:    jiraToken,
+		URL:      jiraURL,
+		Project:  jiraProject,
+	}, nil
 }
 
 func GetOpenAIConfig() (string, string, int, int) {
