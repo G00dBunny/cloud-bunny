@@ -1,29 +1,49 @@
 /*
-*	DONE
-*			- Only fetch logs -> error, CrashLoopBackOff
-*			- For logs : use TailLines + SinceSeconds to get last numbers of lines or last seconds
-*			- Skip pods in Running state with no recent restarts
-*			- integrate  pod status and health
-*
-*   IDEAS
-*			- use lightweight kubeconfig context (long-lived token if in aws)
-*			- if in aws : run in small EC2 instance inside the same VPC as eks cluster?
-*			- track restart counts of pods -> detect pods with high restarts
-*			- mark pods as stale
-*			- memory estimate
-*			-
-*			- Automated jira ticket creation after vulnerability detected -> have the use decide if it wants to create it or not
-*			-
-*			-
-*			-
-*	TODO :
-*			- In gargamel : add flush to autoremove expired entries
-*			- background go routine that purges old pods
-*			-
-*			-
-*			-
-*
- */
+  ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │                                                                                                                 │
+  │ *  DONE                                                                                                         │
+  │ *      - Only fetch logs -> error, CrashLoopBackOff                                                             │
+  │ *      - For logs : use TailLines + SinceSeconds to get last numbers of lines or last seconds                   │
+  │ *      - Skip pods in Running state with no recent restarts                                                     │
+  │ *      - integrate  pod status and health                                                                       │
+  │ *                                                                                                               │
+  │ *   NOTE                                                                                                       │
+  │ *      - use lightweight kubeconfig context (long-lived token if in aws)                                        │
+  │ *      - if in aws : run in small EC2 instance inside the same VPC as eks cluster?                              │
+  │ *      - track restart counts of pods -> detect pods with high restarts                                         │
+  │ *      - mark pods as stale                                                                                     │
+  │ *      - memory estimate                                                                                        │
+  │ *      -                                                                                                        │
+  │ *      - Automated jira ticket creation after vulnerability detected -> have the use decide if it wants to      │
+  │ create it or                                                                                                    │
+  │ not                                                                                                             │
+  │ *      -                                                                                                        │
+  │ *      -                                                                                                        │
+  │ *      -                                                                                                        │
+  │ *  TODO :                                                                                                       │
+  │ *      - In gargamel : add flush to autoremove expired entries                                                  │
+  │ *      - background go routine that purges old pods                                                             │
+  │ *      -                                                                                                        │
+  │ *      -                                                                                                        │
+  │ *      -                                                                                                        │
+  │ *                                                                                                               │
+  │                                                                                                                 │
+  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+*/
+
+/*
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ // ANCHOR - Used to indicate a section in your file                                                     │
+│ // TODO - An item that is awaiting completion                                                           │
+│ // FIXME - An item that requires a bugfix                                                               │
+│ // STUB - Used for generated default snippets                                                           │
+│ // NOTE - An important note for a specific code section                                                 │
+│ // REVIEW - An item that requires additional review                                                     │
+│ // SECTION - Used to define a region (See 'Hierarchical anchors')                                       │
+│ // DONE - Used for Done issues 															              │
+│                                                                                                         │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+*/
 
 package main
 
@@ -34,6 +54,7 @@ import (
 	"path/filepath"
 
 	"github.com/G00dBunny/cloud-bunny/config"
+	"github.com/G00dBunny/cloud-bunny/jiraBed"
 	"github.com/G00dBunny/cloud-bunny/listutils"
 	"github.com/G00dBunny/cloud-bunny/llmBed"
 	"k8s.io/client-go/kubernetes"
@@ -47,12 +68,20 @@ func main() {
 	
 	apiKey, model, maxTokens, timeoutSec := config.GetOpenAIConfig()
 	if apiKey == "" {
-		log.Println("OPENAI_API_KEY not set in environment or .env file; will skip GPT analysis")
+		log.Println("OPENAI_API_KEY not set in environment")
 	}
 
+	jiraUsername, jiraToken, jiraURL, jiraProject ,createJiraTickets  := config.GetJiraConfig()
+
+	jiraConfigured := jiraUsername != "" && jiraToken != "" && jiraURL != "" && jiraProject != ""
+
+	if createJiraTickets && !jiraConfigured {
+		log.Println("Jira configuration incomplete : ")
+		createJiraTickets = false
+	}
 	
 	/*
-	* 	From client-go k8 doc
+	* NOTE : https://github.com/kubernetes/client-go/blob/master/examples/out-of-cluster-client-configuration/main.go
 	*/
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
@@ -62,13 +91,11 @@ func main() {
 	}
 	flag.Parse()
 
-	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// create the clientset
 
 	clientset, err := kubernetes.NewForConfig(config)
 	clientset.CoreV1()
@@ -109,14 +136,17 @@ func main() {
 	
 	fmt.Printf("Found %d bad pods: %v\n", len(badPods), badPods)
 
+	var analysis []llmBed.AnalysisResult
+
+
 	if apiKey != "" {
 		fmt.Println("\nStarting analysis of problematic pods...")
 		
 		gptConfig := llmBed.NewConfig(apiKey, model, maxTokens, timeoutSec)
 		
-		results := llmBed.AnalyzeBadPods(namespaceList, clientset, gptConfig)
+		analysis = llmBed.AnalyzeBadPods(namespaceList, clientset, gptConfig)
 		
-		for _, result := range results {
+		for _, result := range analysis {
 			fmt.Printf("\n=============================================\n")
 			fmt.Printf("POD: %s (Namespace: %s)\n", result.PodName, result.Namespace)
 			fmt.Printf("=============================================\n")
@@ -129,5 +159,48 @@ func main() {
 			fmt.Printf("ANALYSIS:\n%s\n", result.Analysis)
 		}
 	} 
+
+
+
+	/*
+	*	FIXME : REMOVE THIS PART WHEN DONE WITH TICKET AND GPT IMPLEMENTATION 
+	*/
+	if createJiraTickets && jiraConfigured && len(analysis) > 0 {
+		fmt.Println("\nCreating Jira tickets...")
+		
+		jiraConfig := jiraBed.JiraConfig{
+			Username: jiraUsername,
+			Token:    jiraToken,
+			URL:      jiraURL,
+			Project:  jiraProject,
+		}
+		
+		jiraClient, err := jiraBed.JiraClient(jiraConfig)
+		if err != nil {
+			log.Printf("Jira Client failed: %v", err)
+			return
+		}
+		
+		for _, result := range analysis {
+			if result.Error != nil {
+				log.Printf("Skipping ticket creation for pod %s in namespace %s due to analysis error", 
+					result.PodName, result.Namespace)
+				continue
+			}
+			
+			ticketDetail := jiraBed.GenerateTicketFromAnalysis(result)
+			
+			fmt.Printf("Creating ticket for pod: %s in namespace: %s\n", result.PodName, result.Namespace)
+			issue, err := jiraBed.CreateTicket(jiraClient, jiraConfig.Project, ticketDetail)
+			if err != nil {
+				log.Printf("Failed to create ticket for pod %s in namespace %s: %v", 
+					result.PodName, result.Namespace, err)
+				continue
+			}
+			
+			fmt.Printf("Created Jira ticket %s for pod %s in namespace %s\n", 
+				issue.Key, result.PodName, result.Namespace)
+		}
+	}
 
 }

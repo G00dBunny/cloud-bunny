@@ -15,23 +15,26 @@ type JiraConfig struct {
 }
 
 
-func JiraClient(username string, password string, url string) *jira.Client{
+
+/*
+*   NOTE : https://github.com/andygrunwald/go-jira
+*   DONE
+*/
+func JiraClient(config JiraConfig) (*jira.Client, error){
 	jt := jira.BasicAuthTransport{
-        Username: username,
-        Password: password,
+        Username: config.Username,
+        Password: config.Token,
     }
 
-    client, err := jira.NewClient(jt.Client(), url)
+    client, err := jira.NewClient(jt.Client(), config.URL)
     if err != nil {
-        fmt.Println(err)
+    return nil, fmt.Errorf("jira client fail: %v", err)
     }
 
-    me, _, err := client.User.GetSelf()
+    _, _, err = client.User.GetSelf()
     if err != nil {
-        fmt.Println(err)
+		return nil, fmt.Errorf("jira auth fail: %v", err)
     }
 
-    fmt.Println(me)
-
-    return client
+    return client, nil
 }

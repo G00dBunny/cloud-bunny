@@ -1,12 +1,10 @@
 package config
 
 import (
-	"errors"
 	"log"
 	"os"
 	"strconv"
 
-	"github.com/G00dBunny/cloud-bunny/jiraBed"
 	"github.com/joho/godotenv"
 )
 
@@ -17,37 +15,63 @@ func LoadEnv() {
 	}
 }
 
-func GetJiraConfig() (jiraBed.JiraConfig, error) {
+
+/*
+* FIXME : this is a temporary and test implementation.... should use types and not this ugly function... 
+*/
+func GetJiraConfig() (string, string, string, string, bool) {
+	username := os.Getenv("JIRA_USER")
+	token := os.Getenv("JIRA_TOKEN")
+	url := os.Getenv("JIRA_URL")
+	project := os.Getenv("JIRA_PROJECT")
 	
-	jiraUser := os.Getenv("JIRA_USER")
-	if jiraUser == "" {
-		return jiraBed.JiraConfig{}, errors.New("JIRA_USER environment variable is not set")
+	createTickets, err := strconv.ParseBool(os.Getenv("CREATE_JIRA_TICKETS"))
+	if err != nil {
+		createTickets = false 
 	}
-
-	jiraToken := os.Getenv("JIRA_TOKEN")
-	if jiraToken == "" {
-		return jiraBed.JiraConfig{}, errors.New("JIRA_TOKEN environment variable is not set")
-	}
-
-
-	jiraURL := os.Getenv("JIRA_URL")
-	if jiraURL == "" {
-		return jiraBed.JiraConfig{}, errors.New("JIRA_URL environment variable is not set")
-	}
-
-	jiraProject := os.Getenv("JIRA_PROJECT")
-	if jiraProject == "" {
-		return jiraBed.JiraConfig{}, errors.New("JIRA_PROJECT environment variable is not set")
-	}
-
-	return jiraBed.JiraConfig{
-		Username: jiraUser,
-		Token:    jiraToken,
-		URL:      jiraURL,
-		Project:  jiraProject,
-	}, nil
+	
+	return username, token, url, project, createTickets
 }
 
+/*
+*	DONE : use this instead
+*/
+// func GetJiraConfig() (jiraBed.JiraConfig, error) {
+	
+// 	jiraUser := os.Getenv("JIRA_USER")
+// 	if jiraUser == "" {
+// 		return jiraBed.JiraConfig{}, errors.New("JIRA_USER environment variable is not set")
+// 	}
+
+// 	jiraToken := os.Getenv("JIRA_TOKEN")
+// 	if jiraToken == "" {
+// 		return jiraBed.JiraConfig{}, errors.New("JIRA_TOKEN environment variable is not set")
+// 	}
+
+
+// 	jiraURL := os.Getenv("JIRA_URL")
+// 	if jiraURL == "" {
+// 		return jiraBed.JiraConfig{}, errors.New("JIRA_URL environment variable is not set")
+// 	}
+
+// 	jiraProject := os.Getenv("JIRA_PROJECT")
+// 	if jiraProject == "" {
+// 		return jiraBed.JiraConfig{}, errors.New("JIRA_PROJECT environment variable is not set")
+// 	}
+
+// 	return jiraBed.JiraConfig{
+// 		Username: jiraUser,
+// 		Token:    jiraToken,
+// 		URL:      jiraURL,
+// 		Project:  jiraProject,
+// 	}, nil
+// }
+
+
+
+/*
+*	DONE
+*/
 func GetOpenAIConfig() (string, string, int, int) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	
