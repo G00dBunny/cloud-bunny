@@ -1,6 +1,8 @@
 # 🐰 Cloud-Bunny
 
-Meh : Cloud-Bunny is an automated pod anomaly detector that gives solutions using LLM technology (currently supporting GPT-3). The concept is to have a first-responder-like tool that can be used by DevOps and infrastructure team. I made it public because I guess someone could use it or use as inspiration altough it's just a practice tool... 
+Meh : This an automated pod anomaly detector that gives solutions using LLM technology (currently supporting GPT-3). 
+
+The concept is to have a first-responder-like tool that can be used by DevOps and infrastructure team. I made it public because I guess someone could use it or use as inspiration altough it's just a practice tool... 
 
 I'll be working on it as part of a hobby I guess :')
 
@@ -13,6 +15,8 @@ Cloud-Bunny can now automatically create structured Jira tickets when it detects
 
 ![Screenshot 2025-03-31 at 7 40 53 PM](https://github.com/user-attachments/assets/64fbd75c-d3ba-4e6a-aa62-837e49d7ea09)
 
-<img width="1398" alt="Screenshot 2025-03-31 at 7 43 03 PM" src="https://github.com/user-attachments/assets/782cd3ec-713d-4569-bea8-2d755b08bb7f" />
 
-<img width="1427" alt="Screenshot 2025-03-31 at 7 52 55 PM" src="https://github.com/user-attachments/assets/977588dc-b1da-4b23-9af6-dba1d5ffcd6b" />
+<img width="1398" alt="Screenshot 2025-03-31 at 7 43 03 PM" src="https://github.com/user-attachments/assets/97a70020-44d0-4d85-9ce9-43a683ed2068" />
+
+
+<img width="1427" alt="Screenshot 2025-03-31 at 7 52 55 PM" src="https://github.com/user-attachments/assets/c4bf55e1-31c0-47c5-bfab-01d8c274bb58" />
