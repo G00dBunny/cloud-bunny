@@ -134,7 +134,7 @@ func GetBadPod(namespaces []string, clientset *kubernetes.Clientset) []string {
         }
     }
 
-	fmt.Println(badPodNames)
+	// fmt.Println(badPodNames)
     
     return badPodNames
 }
