@@ -57,6 +57,7 @@ import (
 	"github.com/G00dBunny/cloud-bunny/jiraBed"
 	"github.com/G00dBunny/cloud-bunny/listutils"
 	"github.com/G00dBunny/cloud-bunny/llmBed"
+	"github.com/G00dBunny/cloud-bunny/prompt"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -71,14 +72,20 @@ func main() {
 		log.Println("OPENAI_API_KEY not set in environment")
 	}
 
-	jiraUsername, jiraToken, jiraURL, jiraProject ,createJiraTickets  := config.GetJiraConfig()
 
-	jiraConfigured := jiraUsername != "" && jiraToken != "" && jiraURL != "" && jiraProject != ""
+	
+	jiraConfig, err := config.GetJiraConfig()
 
-	if createJiraTickets && !jiraConfigured {
+
+	jiraConfigured := jiraConfig.Username != "" && jiraConfig.Token != "" && jiraConfig.URL != "" && jiraConfig.Project != ""
+
+	// createTicket := jiraConfig.IsUsed
+
+	if err != nil {
 		log.Println("Jira configuration incomplete : ")
-		createJiraTickets = false
 	}
+
+	
 	
 	/*
 	* NOTE : https://github.com/kubernetes/client-go/blob/master/examples/out-of-cluster-client-configuration/main.go
@@ -103,28 +110,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	// exp := gargamel.Expiration(gargamel.NoExpiration)
-
-
-	// cache := gargamel.New(&exp)
-
-	// ns := "monitoring"
-
-	// namespace := gargamel.Namespace{
-	// 	Name: ns,
-	// }
-	// logs := listutils.GetPodLog("monitoring", "real-memory-leak", clientset)
-
-	// podList := []*gargamel.Pod{
-	// 	{Name: logs},
-	// }
-
-	// cache.Set(&namespace, podList)
-	
-
-	// fmt.Println(cache.String())
-	
 
 	namespaceList,_ := listutils.GetAllNamespacesName(clientset)
 
@@ -157,50 +142,79 @@ func main() {
 			}
 			
 			fmt.Printf("ANALYSIS:\n%s\n", result.Analysis)
-		}
-	} 
-
-
-
-	/*
-	*	FIXME : REMOVE THIS PART WHEN DONE WITH TICKET AND GPT IMPLEMENTATION 
-	*/
-	if createJiraTickets && jiraConfigured && len(analysis) > 0 {
-		fmt.Println("\nCreating Jira tickets...")
-		
-		jiraConfig := jiraBed.JiraConfig{
-			Username: jiraUsername,
-			Token:    jiraToken,
-			URL:      jiraURL,
-			Project:  jiraProject,
-		}
-		
-		jiraClient, err := jiraBed.JiraClient(jiraConfig)
-		if err != nil {
-			log.Printf("Jira Client failed: %v", err)
-			return
-		}
-		
-		for _, result := range analysis {
-			if result.Error != nil {
-				log.Printf("Skipping ticket creation for pod %s in namespace %s due to analysis error", 
-					result.PodName, result.Namespace)
-				continue
+			
+			if jiraConfigured {
+				fmt.Printf("\nDo you want to create a Jira ticket for this issue? (y/n): ")
+				var response string
+				fmt.Scanln(&response)
+				
+				if response == "y" || response == "Y" {
+					ticketDetail := jiraBed.GenerateTicketFromAnalysis(result)
+					
+					
+					if prompt.PromptUserForTicketConfirmation(&ticketDetail) {
+					
+						jiraClient, err := jiraBed.JiraClient(jiraConfig)
+						if err != nil {
+							log.Printf("Jira Client failed: %v", err)
+							continue
+						}
+						
+						issue, err := jiraBed.CreateTicket(jiraClient, jiraConfig.Project, ticketDetail)
+						if err != nil {
+							log.Printf("Failed to create ticket for pod %s in namespace %s: %v", 
+								result.PodName, result.Namespace, err)
+							continue
+						}
+						
+						fmt.Printf("Created Jira ticket %s for pod %s in namespace %s\n", 
+							issue.Key, result.PodName, result.Namespace)
+						fmt.Printf("URL: %s/browse/%s\n", jiraConfig.URL, issue.Key)
+					} else {
+						fmt.Println("Ticket creation canceled by user.")
+					}
+				}
 			}
-			
-			ticketDetail := jiraBed.GenerateTicketFromAnalysis(result)
-			
-			fmt.Printf("Creating ticket for pod: %s in namespace: %s\n", result.PodName, result.Namespace)
-			issue, err := jiraBed.CreateTicket(jiraClient, jiraConfig.Project, ticketDetail)
-			if err != nil {
-				log.Printf("Failed to create ticket for pod %s in namespace %s: %v", 
-					result.PodName, result.Namespace, err)
-				continue
-			}
-			
-			fmt.Printf("Created Jira ticket %s for pod %s in namespace %s\n", 
-				issue.Key, result.PodName, result.Namespace)
 		}
+	} else {
+		fmt.Println("Skipping analysis due to missing OpenAI API key.")
 	}
+
+
+	// /*
+	// *	FIXME : REMOVE THIS PART WHEN DONE WITH TICKET AND GPT IMPLEMENTATION 
+	// */
+	// if createTicket && jiraConfigured && len(analysis) > 0 {
+	// 	fmt.Println("\nCreating Jira tickets...")
+		
+	// 	config := jiraConfig
+		
+	// 	jiraClient, err := jiraBed.JiraClient(config)
+	// 	if err != nil {
+	// 		log.Printf("Jira Client failed: %v", err)
+	// 		return
+	// 	}
+		
+	// 	for _, result := range analysis {
+	// 		if result.Error != nil {
+	// 			log.Printf("Skipping ticket creation for pod %s in namespace %s due to analysis error", 
+	// 				result.PodName, result.Namespace)
+	// 			continue
+	// 		}
+			
+	// 		ticketDetail := jiraBed.GenerateTicketFromAnalysis(result)
+			
+	// 		fmt.Printf("Creating ticket for pod: %s in namespace: %s\n", result.PodName, result.Namespace)
+	// 		issue, err := jiraBed.CreateTicket(jiraClient, jiraConfig.Project, ticketDetail)
+	// 		if err != nil {
+	// 			log.Printf("Failed to create ticket for pod %s in namespace %s: %v", 
+	// 				result.PodName, result.Namespace, err)
+	// 			continue
+	// 		}
+			
+	// 		fmt.Printf("Created Jira ticket %s for pod %s in namespace %s\n", 
+	// 			issue.Key, result.PodName, result.Namespace)
+	// 	}
+	// }
 
 }

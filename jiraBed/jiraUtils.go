@@ -26,6 +26,7 @@ import (
 
 
 type TicketDetail struct {
+
 	Summary string
 	Description string
 	IssueType string
@@ -60,8 +61,12 @@ func GenerateTicketFromAnalysis (result llmBed.AnalysisResult) TicketDetail {
 }
 
 
+
+
+
 /*
 * NOTE : provided by https://github.com/andygrunwald/go-jira
+* FIXME : Add assignee for jira
 */
 func CreateTicket(client *jira.Client, projectKey string, ticketDetail TicketDetail) (*jira.Issue, error) {
 	i := jira.Issue{
@@ -74,6 +79,7 @@ func CreateTicket(client *jira.Client, projectKey string, ticketDetail TicketDet
 			Type: jira.IssueType{
 				Name: ticketDetail.IssueType, 
 			},
+			// Assignee: ,
 		},
 	}
 	
